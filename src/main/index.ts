@@ -1,27 +1,37 @@
-const { app, BrowserWindow, shell } = require("electron")
-const path = require("path")
+import { app, BrowserWindow } from "electron"
+import { ChildProcess, fork } from "child_process"
+import path from "path"
 
 const main_url =
   "http://localhost:9090/bundles/runback/dashboard/runback.html?standalone=true/#/"
 const loading_url = path.join(
   "file://",
-  __dirname,
-  "/../dashboard/loading.html"
+  process.resourcesPath,
+  "lib/nodecg/bundles/runback/dashboard/loading.html"
 )
 const main_load_delay = 10 * 1000
 const background_color = "#0f0f0f"
+const nodecg_path = "lib/nodecg"
 
 app.on("ready", () => {
   if (!app.isPackaged) {
     require("vue-devtools").install()
   }
 
-  let main: typeof BrowserWindow
-  let dummy: typeof BrowserWindow
+  let main: BrowserWindow
+  let dummy: BrowserWindow
   let loading = create_loading_window()
+  let nodecg_process: ChildProcess
+
+  nodecg_process = fork("index.js", undefined, {
+    cwd: nodecg_path,
+    env: { ELECTRON_RUN_AS_NODE: "1" },
+  })
+
+  log(`Started nodecg, pid: ${nodecg_process.pid}`)
 
   loading.webContents.on("dom-ready", () => {
-    console.log("[runback] Loading window ready")
+    log("Loading window ready")
     loading.show()
     main = create_main_window()
     dummy = create_main_window()
@@ -30,7 +40,7 @@ app.on("ready", () => {
     // period after NodeCG starts where pages won't load. Delaying the load,
     // then reloading the page appears to deal with this.
     dummy.once("ready-to-show", () => {
-      console.log("[runback] Dummy window ready")
+      log("Dummy window ready")
       dummy.close()
       main.loadURL(main_url)
     })
@@ -40,7 +50,7 @@ app.on("ready", () => {
     }, main_load_delay)
 
     main.once("ready-to-show", () => {
-      console.log("[runback] Main window ready")
+      log("Main window ready")
       main.show()
 
       if (!loading.isDestroyed()) {
@@ -72,7 +82,7 @@ app.on("ready", () => {
   })
 })
 
-function create_main_window(): typeof BrowserWindow {
+function create_main_window(): BrowserWindow {
   let window = new BrowserWindow({
     show: false,
     width: 1280,
@@ -99,7 +109,7 @@ function create_main_window(): typeof BrowserWindow {
   return window
 }
 
-function create_loading_window(): typeof BrowserWindow {
+function create_loading_window(): BrowserWindow {
   let window = new BrowserWindow({
     show: false,
     frame: false,
@@ -115,4 +125,8 @@ function create_loading_window(): typeof BrowserWindow {
   })
 
   return window
+}
+
+function log(...args: any): void {
+  console.log(`[runback-electron] ${args}`)
 }
