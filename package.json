@@ -7,8 +7,8 @@
   "scripts": {
     "dev": "electron-webpack dev",
     "build": "electron-webpack",
-    "dist": "yarn build && electron-builder",
-    "dist:dir": "yarn dist --dir -c.compression=store -c.mac.identity=null"
+    "dist": "yarn build && electron-builder --publish onTagOrDraft -c.mac.identity=null",
+    "dist:dir": "yarn build && electron-builder --publish never --dir -c.compression=store -c.mac.identity=null"
   },
   "dependencies": {
     "source-map-support": "^0.5.16"
