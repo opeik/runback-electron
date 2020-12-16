@@ -2,6 +2,9 @@ import { app, BrowserWindow } from "electron"
 import { ChildProcess, fork } from "child_process"
 import path from "path"
 
+const background_color = "#0f0f0f"
+const nodecg_path = path.join(process.resourcesPath, "lib/nodecg")
+const main_load_delay = 10 * 1000
 const main_url =
   "http://localhost:9090/bundles/runback/dashboard/runback.html?standalone=true/#/"
 const loading_url = path.join(
@@ -9,48 +12,37 @@ const loading_url = path.join(
   process.resourcesPath,
   "lib/nodecg/bundles/runback/dashboard/loading.html"
 )
-const main_load_delay = 10 * 1000
-const background_color = "#0f0f0f"
-const nodecg_path = "lib/nodecg"
 
 app.on("ready", () => {
   if (!app.isPackaged) {
     require("vue-devtools").install()
   }
 
-  let main: BrowserWindow
-  let dummy: BrowserWindow
+  let main: BrowserWindow = create_main_window()
   let loading = create_loading_window()
   let nodecg_process: ChildProcess
+  loading.loadURL(loading_url)
 
   nodecg_process = fork("index.js", undefined, {
+    detached: false,
     cwd: nodecg_path,
     env: { ELECTRON_RUN_AS_NODE: "1" },
   })
 
   log(`Started nodecg, pid: ${nodecg_process.pid}`)
 
-  loading.webContents.on("dom-ready", () => {
+  loading.once("ready-to-show", () => {
     log("Loading window ready")
     loading.show()
-    main = create_main_window()
-    dummy = create_main_window()
 
     // It Just Works™. This is an **awful** hack. For some reason there's a
-    // period after NodeCG starts where pages won't load. Delaying the load,
-    // then reloading the page appears to deal with this.
-    dummy.once("ready-to-show", () => {
-      log("Dummy window ready")
-      dummy.close()
-      main.loadURL(main_url)
-    })
-
+    // period after NodeCG starts where pages won't load. Delaying the load
+    // appears to deal with this.
     setTimeout(() => {
-      dummy.loadURL(main_url)
+      main.loadURL(main_url)
     }, main_load_delay)
 
     main.once("ready-to-show", () => {
-      log("Main window ready")
       main.show()
 
       if (!loading.isDestroyed()) {
@@ -58,8 +50,6 @@ app.on("ready", () => {
       }
     })
   })
-
-  loading.loadURL(loading_url)
 
   // Kill the process if all the windows are closed.
   app.on("window-all-closed", () => {
@@ -79,6 +69,11 @@ app.on("ready", () => {
 
       main.loadURL(main_url)
     }
+  })
+
+  // Kill NodeCG on exit.
+  process.on("exit", () => {
+    nodecg_process.kill()
   })
 })
 
