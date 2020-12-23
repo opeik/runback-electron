@@ -13,7 +13,7 @@
     "build": "electron-webpack",
     "dist": "yarn build && electron-builder --publish always -c.mac.identity=null",
     "dist:dir": "yarn build && electron-builder --publish never --dir -c.compression=store -c.mac.identity=null",
-    "update-version": "VERSION=$(json 'version' -f lib/nodecg/bundles/runback/package.json) && json -I -f package.json -e this.version=\\\"$VERSION\\\""
+    "update-version": "bash update-version.sh"
   },
   "dependencies": {
     "json": "^10.0.0",
