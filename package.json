@@ -1,6 +1,6 @@
 {
   "name": "runback",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "GPL-3.0",
   "description": "Broadcast graphics for fighting games",
   "author": "Sandro Stikić (opeik)",
@@ -12,9 +12,11 @@
     "dev": "electron-webpack dev",
     "build": "electron-webpack",
     "dist": "yarn build && electron-builder --publish always -c.mac.identity=null",
-    "dist:dir": "yarn build && electron-builder --publish never --dir -c.compression=store -c.mac.identity=null"
+    "dist:dir": "yarn build && electron-builder --publish never --dir -c.compression=store -c.mac.identity=null",
+    "update-version": "VERSION=$(json 'version' -f lib/nodecg/bundles/runback/package.json) && json -I -f package.json -e this.version=\\\"$VERSION\\\""
   },
   "dependencies": {
+    "json": "^10.0.0",
     "source-map-support": "^0.5.16"
   },
   "devDependencies": {
